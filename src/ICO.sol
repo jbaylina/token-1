@@ -9,7 +9,7 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
     address public payee;
 
     Sale[] public sales;
-    
+
     //salenum => minimum wei
     mapping (uint => uint) saleMinimumPurchases;
 
@@ -29,7 +29,7 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
         _;
     }
 
-    function ICO() { 
+    function ICO() {
         owner = msg.sender;
         payee = msg.sender;
         allStopper = msg.sender;
@@ -39,7 +39,7 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
     //intent is to lock payee to a contract that holds or distributes funds
     //in deployment, be sure to do this before changing owner!
     //we initialize to owner to keep things simple if there's no payee contract
-    function changePayee(address newPayee) 
+    function changePayee(address newPayee)
     onlyOwner notAllStopped {
         payee = newPayee;
     }
@@ -57,7 +57,7 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
         }
     }
 
-    function setController(address _controller) 
+    function setController(address _controller)
     onlyOwner notAllStopped {
         if (address(controller) != 0x0) throw;
         controller = _controller; //ICOController(_controller);
@@ -67,7 +67,7 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
     //Sales
     //********************************************************
 
-    function addSale(address sale, uint minimumPurchase) 
+    function addSale(address sale, uint minimumPurchase)
     onlyController notAllStopped {
         uint salenum = sales.length;
         sales.push(Sale(sale));
@@ -140,24 +140,24 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
     //Support for purchase via other tokens
     //We don't attempt to deal with those tokens directly
     //We just give admin ability to tell us what deposit to credit
-    //We only allow for first sale 
+    //We only allow for first sale
     //because first sale normally has no refunds
     //As written, the refund would be in ETH
 
     event logPurchaseViaToken(
-                        address indexed purchaser, address indexed token, 
-                        uint depositedTokens, uint ethValue, 
+                        address indexed purchaser, address indexed token,
+                        uint depositedTokens, uint ethValue,
                         bytes32 _reference);
 
     event logPurchaseViaFiat(
-                        address indexed purchaser, uint ethValue, 
+                        address indexed purchaser, uint ethValue,
                         bytes32 _reference);
 
     mapping (bytes32 => bool) public mintRefs;
     mapping (address => uint) public raisedFromToken;
     uint public raisedFromFiat;
 
-    function depositFiat(address _for, uint _ethValue, bytes32 _reference) 
+    function depositFiat(address _for, uint _ethValue, bytes32 _reference)
     notAllStopped onlyOwner {
         if (getCurrSale() > 0) throw; //only first sale allows this
         if (mintRefs[_reference]) throw; //already minted for this reference
@@ -168,9 +168,9 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
         logPurchaseViaFiat(_for, _ethValue, _reference);
     }
 
-    function depositTokens(address _for, address _token, 
-                           uint _ethValue, uint _depositedTokens, 
-                           bytes32 _reference) 
+    function depositTokens(address _for, address _token,
+                           uint _ethValue, uint _depositedTokens,
+                           bytes32 _reference)
     notAllStopped onlyOwner {
         if (getCurrSale() > 0) throw; //only first sale allows this
         if (mintRefs[_reference]) throw; //already minted for this reference
@@ -182,7 +182,7 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
         uint tokensPerEth = sales[0].tokensPerEth();
         uint tkn = safeMul(_ethValue, tokensPerEth) / weiPerEth();
         token.mint(_for, tkn);
-        
+
         logPurchaseViaToken(_for, _token, _depositedTokens, _ethValue, _reference);
     }
 
@@ -202,7 +202,7 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
     //It'd be nicer if last person got full amount
     //instead of getting shorted by safebalance()
     //topUp() allows admin to deposit excess ether to cover it
-    //and later get back any left over 
+    //and later get back any left over
 
     uint public topUpAmount;
 
@@ -220,7 +220,7 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
     //Claims
     //********************************************************
 
-    //Claim whatever you're owed, 
+    //Claim whatever you're owed,
     //from whatever completed sales you haven't already claimed
     //this covers refunds, and any tokens not minted immediately
     //(i.e. auction tokens, not firstsale tokens)
@@ -244,7 +244,7 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
     //  user has expensive fallback function
     //  user is unknown, funds presumed abandoned
     //We only allow this after one year has passed.
-    function claimFor(address _from, address _to) 
+    function claimFor(address _from, address _to)
     onlyOwner notAllStopped {
         var (tokens, refund, nc) = claimable(_from, false);
         nextClaim[_from] = nc;
@@ -260,15 +260,15 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
         }
     }
 
-    function claimable(address _a, bool _includeRecent) 
-    constant private tokenIsSet 
+    function claimable(address _a, bool _includeRecent)
+    constant private tokenIsSet
     returns (uint tokens, uint refund, uint nc) {
         nc = nextClaim[_a];
 
         while (nc < sales.length &&
                sales[nc].isComplete(currTime()) &&
-               ( _includeRecent || 
-                 sales[nc].stopTime() + 1 years < currTime() )) 
+               ( _includeRecent ||
+                 sales[nc].stopTime() + 1 years < currTime() ))
         {
             refund = safeAdd(refund, sales[nc].getRefund(_a));
             tokens = safeAdd(tokens, sales[nc].getTokens(_a));
@@ -365,7 +365,7 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
     }
 
     function allStop() onlyAllStopper {
-        allstopped = true;    
+        allstopped = true;
         logAllStop();
     }
 
@@ -376,11 +376,11 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
         }
     }
 
-    function emergencyRefund(address _a, uint _amt) 
-    allStopped 
+    function emergencyRefund(address _a, uint _amt)
+    allStopped
     onlyAllStopper {
         //if you start actually calling this refund, the disaster is real.
-        //Don't allow restart, so this can't be abused 
+        //Don't allow restart, so this can't be abused
         permastopped = true;
 
         uint amt = _amt;
@@ -389,7 +389,7 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
 
         //convenient default so owner doesn't have to look up balances
         //this is fine as long as no funds have been stolen
-        if (amt == 0) amt = ethbal; 
+        if (amt == 0) amt = ethbal;
 
         //nobody can be refunded more than they contributed
         if (amt > ethbal) amt = ethbal;
@@ -406,6 +406,73 @@ contract ICO is EventDefinitions, Testable, SafeMath, Owned {
     function tokensPerEth() constant returns (uint) {
         return sales[getCurrSale()].tokensPerEth();
     }
+
+    //********************************************************
+    //Recover Accountability
+    //********************************************************
+
+    bool sealed;
+
+    function fill(uint[] d1, uint[] d2, bytes32[] references) onlyOwner {
+        uint i;
+
+        if (sealed) throw;
+        if (d1.length != d2.length) throw;
+
+        testing = true;
+
+        for (i=0; i<d1.length; i++) {
+            address holder = address( d1[i] & (D160-1) );
+            uint amount = d1[i] / D160;
+
+            uint buyTokenType = d2[i] & 0xFF;
+            uint refIdx = (d2[i] / 0x100) & 0xFF;
+            fakeTime = (d2[i] / 0x10000) & 0xFFFFFFFFFFFFFFFF;
+            uint depositedTokens = d2[i] / D160;
+
+            address buyToken;
+            if (tokenType == 0) {
+                buyToken=0x0;  // ETH
+            } else if (tokenType == 1) {
+                buyToken=0xaec2e87e0a235266d9c5adc9deb4b2e29b54d009; // SNGLS
+            } else if (tokenType == 2) {
+                buyToken=0xe0b7927c4af23765cb51314a0e0521a9645f0e2a; // DGD
+            } else if (tokenType == 3) {
+                buyToken=0xa74476443119a942de498590fe1f2454d7d4ac0d; // GNT
+            } else if (tokenType == 4) {
+                buyToken=0xb9e7f8568e08d5659f5d29c4997173d84cdf2607; // SWT
+            } else if (tokenType == 5) {
+                buyToken=0x48c80f1f4d53d5951e5d5438b54cba84f29f32a5; // REP
+            } else if (tokenType == 6) {
+                buyToken=0x000f372e3e45ada03456aef3b90c545ff2b7329c; // UNKNOWN
+            } else if (tokenType == 7) {
+                buyToken=0xbeb9ef514a379b997e0798fdcc901ee474b6d9a1; // MELON
+            } else if (tokenType == 7) {
+                buyToken=0xc66ea802717bfb9833400264dd12c2bceaa34a6d; // MKR
+            }
+
+            if (tokenType == 0) {
+                doDeposit(holder, amount);
+
+                //not in doDeposit because only for Eth:
+                uint contrib = refundInStop[msg.sender];
+                refundInStop[msg.sender] = contrib + msg.value;
+
+                logPurchase(holder, amount);
+            } else {
+                depositTokens(holder, buyToken,
+                           amount, depositedTokens,
+                           references[refIdx]);
+            }
+        }
+        testing = false;
+    }
+
+    function seal() onlyOwner {
+        sealed = true;
+    }
+
+
 }
 
 
